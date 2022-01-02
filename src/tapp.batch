@@ -1,0 +1,2 @@
+#!/bin/bash
+zip -Z store ../remora.tapp autoexec.be mcp23017.be pilote.be web_interface.be
