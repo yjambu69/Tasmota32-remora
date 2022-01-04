@@ -13,7 +13,7 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller
   - firmware tasmota32 prenant en charge l'I2C, la téléinfo, les scripts berry. Un de disponible dans le dossier bin.
 
 ## Installation
-  - flasher le .
+  - flasher le firmware sur l'esp32.
   - configurer les GPIOs de l'interface I2C et téléinfo.
   - envoyer le fichier remora.tapp dans Console > gestionnaire de fichier.
 
