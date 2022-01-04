@@ -1,6 +1,6 @@
 # Tasmota32-remora
 Application écrit en berry pour le gestionnaire de fil pilote remora fonctionnant sur firmware Tasmota.
-Inspirer de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller
+Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller
 
 ## Fonctions
   - petit driver I2C pour commander le circuit mcp23017.
