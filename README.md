@@ -22,5 +22,6 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller
   - gerer les autres composants de la remora : le relais, les leds.
   - faire remonter les commandes et états en mqtt.
   - créer une commande de délestage. Soit enclenché par la téléinfo soit dans une rule avec un autre capteur de puissance.
-  - créer un programmateur horaire. Comme celui de Tasmota32-Multi-Zone-Heating-Controller.
+  - avoir la possibilité de renommer les fils pilotes et régler le nombre utilisé.
+  - créer un programmation horaire. Comme celui de Tasmota32-Multi-Zone-Heating-Controller.
   - gérer un écran tactile.
