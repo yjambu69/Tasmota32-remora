@@ -1,7 +1,8 @@
 #-
  - I2C driver pour le chip mcp23017 écrit en Berry pour fonctionner sur la Remora
  - Les GPIOs fonctionnent uniquement en mode output et en état inverse
- - le mcp23017 au démarrage conserve l'état demandé au gpios mais reintialise les gpios en mode input
+ - le mcp23017 après un redémarrage de tasmota conserve l'état demandé au gpios mais reintialise les gpios en mode input
+ - le mcp23017 à la mise sous tension a ses gpios mis à zéro et en mode input
 -#
 
 MCP23017_ADDR = 0x20 # adresse I2C du MCP23017
