@@ -1,0 +1,2 @@
+#define MY_LANGUAGE            fr_FR
+#define USE_TELEINFO
