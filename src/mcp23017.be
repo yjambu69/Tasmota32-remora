@@ -18,7 +18,7 @@ class MCP23017 : Driver
       print("I2C: MCP23017 mis en mode 16 bit")
       tasmota.delay(10)
       self.wire.write(MCP23017_ADDR, 0x00, 0x0000, 2) # met les pins en mode output MCP23017_IODIRA = 0x00 et IODIRB = 0x01
-	  self.b = self.wire.read_bytes(MCP23017_ADDR, 0x12, 2) # reprends l'état des gpios MCP23017_GPIOA = 0x12 et MCP23017_GPIOB = 0x13
+      self.b = self.wire.read_bytes(MCP23017_ADDR, 0x12, 2) # reprends l'état des gpios MCP23017_GPIOA = 0x12 et MCP23017_GPIOB = 0x13
       print("I2C: pins mis en mode output")
     end
   end
@@ -31,7 +31,6 @@ class MCP23017 : Driver
   def get_pin(pin)
 	return int(!self.b.getbits(pin,1))
   end
-
 end
 
 mcp23017 = MCP23017()
