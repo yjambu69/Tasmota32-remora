@@ -1,6 +1,6 @@
 list int SortiesFP = [14,15,12,13,10,11,1,0,3,2,5,4,7,6] # pins du mcp23037 pour chaque fils pilotes [FP1 (14,15), FP2 (12,13),...]
 int NB_FP = 7 # nombre de fil pilote physique
-list etats_FP # états des fils pilotes
+list etats_FP = [] # états des fils pilotes
 etats_FP.resize(NB_FP)
 int LED_PIN = 8
 int RELAIS_PIN = 9
