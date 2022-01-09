@@ -5,7 +5,7 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller
 ## Fonctions
   - petit driver I2C pour commander le circuit mcp23017.
   - ajout sur l'interface web l'état des fils pilotes et boutons pour les piloter.
-  - commande dans la console setfp permettant de les piloters avec des rules ou avec des commandes http.
+  - commande dans la console setfp permettant de les piloter avec des rules ou avec des commandes http.
 
 ## Prérequis
   - une carte remora.
@@ -18,10 +18,10 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller
   - envoyer le fichier remora.tapp dans Console > gestionnaire de fichier.
 
 ## TODO
-  - gerer les modes eco-1 et eco-2.
-  - gerer les autres composants de la remora : le relais, les leds.
+  - gérer les modes eco-1 et eco-2.
+  - gérer les autres composants de la remora : le relais, les leds.
   - faire remonter les commandes et états en mqtt.
   - créer une commande de délestage. Soit enclenché par la téléinfo soit dans une rule avec un autre capteur de puissance.
-  - avoir la possibilité de renommer les fils pilotes et régler le nombre utilisé.
-  - créer un programmation horaire. Comme celui de Tasmota32-Multi-Zone-Heating-Controller.
+  - avoir la possibilité de renommer les fils pilotes et régler le nombre utilisé, la compatibilité ou non des modes eco -1 et -2.
+  - créer une programmation horaire. Comme celui de Tasmota32-Multi-Zone-Heating-Controller.
   - gérer un écran tactile.
