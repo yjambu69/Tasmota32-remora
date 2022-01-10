@@ -109,4 +109,39 @@ end
 tasmota.add_cmd('setfp', cmd_setfp)
 getfp(0) # met à jour l'états des fils pilotes
 
+# Génération des signaux pour les modes eco -1 et -2
+
+def timer_3s()
+	for i:1..NB_FP
+		if etats_FP[i-1] == '1'
+			mcp23017.cmd_pin(SortiesFP[i*2-2],0)
+			mcp23017.cmd_pin(SortiesFP[i*2-1],0)
+		end
+	end
+end
+
+def timer_7s()
+	for i:1..NB_FP
+		if etats_FP[i-1] == '2'
+			mcp23017.cmd_pin(SortiesFP[i*2-2],0)
+			mcp23017.cmd_pin(SortiesFP[i*2-1],0)
+		end
+	end
+end
+
+def timer_5m()
+	for i:1..NB_FP
+		if etats_FP[i-1] == '1' || etats_FP[i-1] == '2'
+			mcp23017.cmd_pin(SortiesFP[i*2-2],1)
+			mcp23017.cmd_pin(SortiesFP[i*2-1],1)
+		end
+	end
+	tasmota.set_timer(300000, timer_5m) #relance la fonction dans 5 minutes
+	tasmota.set_timer(3000, timer_3s) # remet les pins à 0 dans 3s pour les fils pilotes en eco -1 
+	tasmota.set_timer(7000, timer_7s) # remet les pins à 0 dans 7s pour les fils pilotes en eco -2
+end
+
+timer_5m()
+
+# Fin génération des signaux pour les modes eco -1 et -2
 
