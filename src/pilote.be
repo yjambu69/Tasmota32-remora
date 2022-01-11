@@ -99,10 +99,10 @@ def cmd_setfp(cmd, idx, payload, payload_json)
 			setfp(int(payload[0]),payload[1])
 			tasmota.resp_cmnd('{"setfp" : "'+str(etats_FP)+'"}')
 		else
-		tasmota.resp_cmnd('{"paramètres invalides"}') # erreur de saisie des paramètres
+		tasmota.resp_cmnd('{"setfp" : "paramètres invalides"}') # erreur de saisie des paramètres
 		end
 	else
-	tasmota.resp_cmnd('{"paramètres invalides"}') # erreur de saisie des paramètres
+	tasmota.resp_cmnd('{"setfp" : "paramètres invalides"}') # erreur de saisie des paramètres
 	end
 end
 
