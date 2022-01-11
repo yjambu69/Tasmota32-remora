@@ -2,6 +2,7 @@ list int SortiesFP = [14,15,12,13,10,11,1,0,3,2,5,4,7,6] # pins du mcp23037 pour
 int NB_FP = 7 # nombre de fil pilote physique
 list etats_FP = [] # états des fils pilotes
 etats_FP.resize(NB_FP)
+list FPS_support12 = [false,false,false,false,false,false,false] # support ou non des modes eco-1 et -2 pour chaque fils pilotes
 int LED_PIN = 8
 int RELAIS_PIN = 9
 modes = ['C','A','E','H','1','2']	# C=Confort, A=Arrêt, E=Eco, H=Hors gel, 1=Eco-1, 2=Eco-2
@@ -33,33 +34,29 @@ end
 setfp(1,'A') > fil pilote 1 sur arrêt
 setfp(0,'E') > tous les fils pilotes sur eco
 -#
-
 def setfp(FP, value)
 	if FP == 0
 		for i:1..NB_FP
 			setfp(i, value)
 		end
 	else
-		etats_FP[FP-1] = value
 		if value == 'C'
 			mcp23017.cmd_pin(SortiesFP[FP*2-2],0)
 			mcp23017.cmd_pin(SortiesFP[FP*2-1],0)
 		elif value == 'A'
 			mcp23017.cmd_pin(SortiesFP[FP*2-2],0)
 			mcp23017.cmd_pin(SortiesFP[FP*2-1],1)
-		elif value == 'E'
+		elif value == '1' || value == '2' || value == 'E'
 			mcp23017.cmd_pin(SortiesFP[FP*2-2],1)
 			mcp23017.cmd_pin(SortiesFP[FP*2-1],1)
+			if !FPS_support12[FP-1] # si eco -1 et -2 non supporté les fils pilotes sont mis sur eco
+				value = 'E'
+			end
 		elif value == 'H'
 			mcp23017.cmd_pin(SortiesFP[FP*2-2],1)
 			mcp23017.cmd_pin(SortiesFP[FP*2-1],0)
-		elif value == '1' #met en mode eco, eco-1 non géré pour l'instant && FP_support12(FP)
-			mcp23017.cmd_pin(SortiesFP[FP*2-2],1)
-			mcp23017.cmd_pin(SortiesFP[FP*2-1],1)
-		elif value == '2' #met en mode eco, eco-2 non géré pour l'instant
-			mcp23017.cmd_pin(SortiesFP[FP*2-2],1)
-			mcp23017.cmd_pin(SortiesFP[FP*2-1],1)
 		end
+	etats_FP[FP-1] = value
 	end
 end
 
