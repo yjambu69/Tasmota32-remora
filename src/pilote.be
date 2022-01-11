@@ -84,29 +84,31 @@ attention à les commandes 1 et 11 12 2 21 22 sont abigües 11 par exemple peut 
 pour y palier les commandes pour positionner plusieurs fils pilotes devront être composé d'au moins 3 caractères.
 exemple : 11- pour fil 1 et 2 sur eco -1, 11 pour juste le fil pilote sur eco -1 
 -#
-
 def cmd_setfp(cmd, idx, payload, payload_json)
 	if payload == ""  # setfp sans arguments
-	tasmota.resp_cmnd_done()
+	tasmota.resp_cmnd('{"setfp" : "'+str(etats_FP)+'"}')
 	elif size(payload) > 2 && size(payload) <= NB_FP #commande de plus de 3 caractères = positionnement d'un trait des fils pilotes
 		for i:0..size(payload)-1
 			if modes.find(payload[i]) != nil
 				setfp(i+1,payload[i])
 			end
 		end
-	tasmota.resp_cmnd_done()
+	tasmota.resp_cmnd('{"setfp" : "'+str(etats_FP)+'"}')
 	elif size(payload) == 2 && int(payload[0]) >= 0 && int(payload[0]) <= NB_FP #commande à 2 caractères
 		if modes.find(payload[1]) != nil
 			setfp(int(payload[0]),payload[1])
+			tasmota.resp_cmnd('{"setfp" : "'+str(etats_FP)+'"}')
+		else
+		tasmota.resp_cmnd('{"paramètres invalides"}') # erreur de saisie des paramètres
 		end
-	tasmota.resp_cmnd_done()
 	else
-	tasmota.resp_cmnd_error() # erreur de saisie des paramètres de la commande todo ajouter le message d'erreur paramètres invalides
+	tasmota.resp_cmnd('{"paramètres invalides"}') # erreur de saisie des paramètres
 	end
-	print("Etats des fils pilotes : "+str(etats_FP)) # à remplacer par tasmota.resp_cmnd() avec la réponse d'états des fils pilotes
 end
 
 tasmota.add_cmd('setfp', cmd_setfp)
+# Fin commande pour la console
+
 getfp(0) # met à jour l'états des fils pilotes
 
 # Génération des signaux pour les modes eco -1 et -2
