@@ -29,6 +29,7 @@ def getfp(FP)
 	end
 end
 
+getfp(0) # met à jour l'états des fils pilotes executé une fois au démarrage
 
 #- positionne les GPIOs associés au n° du fil pilote exemple : 
 setfp(1,'A') > fil pilote 1 sur arrêt
@@ -64,7 +65,9 @@ end
 exemple : FP1 est à C il passe à A
 -#
 def inc_etat_FP(FP)
-	if modes.find(etats_FP[FP-1]) == 5
+	if modes.find(etats_FP[FP-1]) == 5 && FPS_support12[FP-1]
+		setfp(FP,modes[0])
+	elif modes.find(etats_FP[FP-1]) == 3 && !FPS_support12[FP-1]
 		setfp(FP,modes[0])
 	else
 		setfp(FP,modes[modes.find(etats_FP[FP-1])+1])
@@ -106,10 +109,7 @@ end
 tasmota.add_cmd('setfp', cmd_setfp)
 # Fin commande pour la console
 
-getfp(0) # met à jour l'états des fils pilotes
-
 # Génération des signaux pour les modes eco -1 et -2
-
 def timer_3s()
 	for i:1..NB_FP
 		if etats_FP[i-1] == '1'
@@ -141,6 +141,5 @@ def timer_5m()
 end
 
 timer_5m()
-
 # Fin génération des signaux pour les modes eco -1 et -2
 
