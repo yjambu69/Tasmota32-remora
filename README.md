@@ -10,7 +10,7 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller 
 ## Prérequis
   - une carte remora.
   - un esp32. Les esp8266 ne peuvent pas faire tourner les scripts berry.
-  - firmware tasmota32 prenant en charge l'I2C, la téléinfo, les scripts berry. Un de disponible dans le dossier tasmota_firmware.
+  - firmware tasmota32 prenant en charge l'I2C, la téléinfo, les scripts berry. Un est disponible dans le dossier tasmota_firmware.
 
 ## Installation
   - flasher le firmware sur l'esp32.
@@ -18,7 +18,7 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller 
   - envoyer le fichier remora.tapp dans Console > gestionnaire de fichier.
 
 ## TODO
-  - gérer les modes eco-1 et eco-2. Reprendre la solution sur : https://github.com/bronco0/remora_soft
+  - <strike>gérer les modes eco-1 et eco-2. Reprendre la solution sur : https://github.com/bronco0/remora_soft</strike>
   - gérer les autres composants de la remora : le relais, les leds.
   - faire remonter les commandes et états en mqtt.
   - créer une commande de délestage. Soit enclenché par la téléinfo soit dans une rule avec un autre capteur de puissance.
