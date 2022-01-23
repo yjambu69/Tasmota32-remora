@@ -1,0 +1,9 @@
+{
+    "menu_fp_conf" : [
+		"<script type='text/javascript'>function check_FP(checkbox,id) {if (checkbox.checked) document.getElementById(id).disabled = false; else document.getElementById(id).disabled = true; }</script><form onsubmit='return handleData()' method='post' action='/cfp'>",
+		"</form>"
+	],
+	"field_fp" : "<p><fieldset name='FP' id='%d' %s><legend>Fil pilote n°%d <input type='checkbox' name='FP_use%d' %s onclick='return check_FP(this,%d);'></legend><input type='text' name='nom%d' value='%s' required minlength='1' maxlength='16'>support mode eco -1 et -2 <input type='checkbox' name='conf12%d' %s></fieldset></p>",
+    "button_conf_fp_save": "<p></p><button name='save' type='submit'>Enregistrer</button>",
+    "button_conf_fp" : "<p><form id=conf_fp_button action='cfp' style='display: block;' method='get'><button>Configuration fils pilotes</button></form></p>"
+}
