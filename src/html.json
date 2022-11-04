@@ -1,9 +1,62 @@
 {
-    "menu_fp_conf" : [
-		"<script type='text/javascript'>function check_FP(checkbox,id) {if (checkbox.checked) document.getElementById(id).disabled = false; else document.getElementById(id).disabled = true; }</script><form onsubmit='return handleData()' method='post' action='/cfp'>",
-		"</form>"
-	],
-	"field_fp" : "<p><fieldset name='FP' id='%d' %s><legend>Fil pilote n°%d <input type='checkbox' name='FP_use%d' %s onclick='return check_FP(this,%d);'></legend><input type='text' name='nom%d' value='%s' required minlength='1' maxlength='16'>support mode eco -1 et -2 <input type='checkbox' name='conf12%d' %s></fieldset></p>",
-    "button_conf_fp_save": "<p></p><button name='save' type='submit'>Enregistrer</button>",
-    "button_conf_fp" : "<p><form id=conf_fp_button action='cfp' style='display: block;' method='get'><button>Configuration fils pilotes</button></form></p>"
+	"menu_fp_conf" : {
+		"script" : "<script type='text/javascript'>function check_FP(checkbox,id) {if (checkbox.checked) document.getElementById(id).disabled = false; else document.getElementById(id).disabled = true; }</script><form method='post' action='/cfp'>",
+		"field_fp" : "<p><fieldset name='FP' id='%d' %s><legend>Fil pilote n°%d <input type='checkbox' name='FP_use%d' %s onclick='return check_FP(this,%d);'></legend>",
+		"nom" : "<input type='text' name='nom%d' value='%s' required minlength='1' maxlength='16'>",
+		"eco" : "support mode eco -1 et -2 <input type='checkbox' name='conf12%d' %s></fieldset></p>",
+		"button_conf_save": "<p></p><button type='submit' class='button bgrn'>Enregistrer</button>"
+	},
+    "menu_ge_conf" : {
+		"script" : "<script type='text/javascript'>function check(checkbox,id) {if (checkbox.checked) document.getElementById(id).disabled = false; else document.getElementById(id).disabled = true; }function capteur_change() {if (document.getElementById('autre').checked) document.getElementById('autre_capteur').disabled = false; else document.getElementById('autre_capteur').disabled = true;}</script><form method='post' action='/cfg'>",
+		"field_delest" : "<fieldset name='delest' id='1' %s><legend>Gestion du délestage <input type='checkbox' name='delest' value='true' %s onclick='return check(this,1);'> </legend>",
+		"capteur_teleinfo" : "<input type='radio' id='teleinfo' name='capteur_delest' value='teleinfo' %s onchange='capteur_change();'><label for='teleinfo'>Par téléinfo</label>",
+		"capteur_autre": "<input type='radio' id='autre' value='autre' name='capteur_delest' %s onchange='capteur_change();'><label for='other'>Autre capteur</label>",
+		"field_autre": "<fieldset id='autre_capteur' %s>",
+		"driver": "<input type='text' name='driver' value='%s' required>",
+		"sensor" : "<input type='text' name='sensor' value='%s' required>",
+		"se1": "<p>Seuil d'enclenchement <input type='number' value='%i' name='seuil_delest' required></p>",
+		"se2": "<p>Seuil de déclenchement <input type='number' value='%i' name='seuil_relest' required></p>",
+		"se3": "<p>Seuil d'enclenchement d'urgence <input type='number' value='%i' name='seuil_delesturg' required></p>",
+		"t1": "<p>Temporisation entre délestage (1 à 20s)<input type='number' value='%i' min='1' max='20' name='tempo_delest' required></p>",
+		"t2": "<p>Temporisation entre relestage (5 à 600s)<input type='number' value='%i' min='5' max='600' name='tempo_relest' required></p>",
+		"t3": "<p>Temporisation cycle délestage (30 à 600s)<input type='number' value='%i' min='30' max='600' name='timer_delestage' required></p>",
+		"field_relais" : "<fieldset id='2' %s><legend>Gestion du relais <input type='checkbox' name='relais' value='true' %s onclick='return check(this,2);'></legend>",
+		"relais_tele" : "<p><input type='radio' id='tele' name='gest_relais' %s value='teleinfo'><label for='tele'>Par téléinfo (HP/HC)</label>",
+		"relais_prog" : "<input type='radio' id='prog' name='gest_relais' %s value='prog'><label for='prog'>Par programmation horaire</label></p>",
+		"delest_relais" : "<p><input type='checkbox' name='delest_relais' %s value='true'> A délester </p>",
+		"invers_relais" : "<input type='checkbox' name='invers' %s value='true'> Inversé</fieldset>",
+		"field_autre_option" : "<fieldset id='options'><legend>Autres options</legend><input type='checkbox' name='mqtt' %s  value='true'> MQTT </fieldset>",
+		"button_conf_save": "<p></p><button type='submit' class='button bgrn'>Enregistrer</button>"
+	},
+	"schedules" : {
+		"script_schedule" : "<script type='text/javascript'>function all_j() {var x = document.getElementsByName('jour'); var i; for (i = 0; i < x.length; i++) {x[i].checked = true;}} function no_j() {var x = document.getElementsByName('jour'); var i; for (i = 0; i < x.length; i++) {x[i].checked = false;}}</script>",
+		"style" : "<style>.onglet {float:left;text-align:center;min-width:5em;padding:0 8px 0 8px;margin: 1px 0px 0px 0px;border: 1px solid gray;border-top-left-radius: 6px;border-top-right-radius: 6px;height:20px;} li {display:inline-block;}</style>",
+		"onglets_schedule" : "<h3>Programmes horaires</h3><ul style='margin:0; padding-inline-start:0;margin-block-end:0;'>",
+		"onglet_schedule" : "<li><a class='onglet' id='os%s' style='background : black;color:white;' href='/sch?sch=%s'>%s</a></li>",
+		"schedule" : "</ul><div style='border:1px solid gray;'><form method='post' action='/sch'>",
+		"jours" : "<fieldset><legend>jours de la semaine</legend>lun <input type='checkbox' id='j1' name='jour' value='1'>mar <input type='checkbox' id='j2' name='jour' value='2'>mer <input type='checkbox' id='j3' name='jour' value='3'>jeu <input type='checkbox' id='j4' name='jour' value='4'>ven <input type='checkbox' id='j5' name='jour' value='5'>sam <input type='checkbox' id='j6' name='jour' value='6'>dim <input type='checkbox' id='j0' name='jour' value='0'><p><a onclick='all_j()'>tout sélectionner</a></p><p><a onclick='no_j()'>tout désélectionner</a></p></fieldset>",		
+		"heure" : "<p><table style='width:100%;'><tr><td>Heure de déclenchement :</td><td><input type='time' id='heure' required></td></tr>",
+		"fp" : "<tr><td>%s :</td><td><select id='fp%d'><option value=''>-</option><option value='C'>Confort</option><option value='A'>Arrêt</option><option value='E'>Eco</option><option value='H'>Hors-gel</option><option value='1'>Eco-1</option><option value='2'>Eco-2</option></select></td></tr>",
+		"relais" : "<tr><td>Relais :</td><td><select id='relais'><option value=''>-</option><option value='0'>Arrêt</option><option value='1'>Marche</option></select></td></tr>",
+		"button_sch_save" : "</table></p><p></p><button type='submit' class='button bgrn' id='save_sch' value='%d'>Enregistrer</button>",
+		"button_sch_add" : "<p></p><button type='submit' id='add_sch'>Ajouter</button></form>",
+		"button_sch_del" : "<form method='post' action='/sch'><p></p><button type='submit' class='button bred' id='del_sch' value='%d'>Supprimer</button></form></div>",
+		"script_derogation" : "<script>function convert_to_timestamp(timestamp_id,input_name) {var x = document.getElementsByName(input_name); document.getElementById(timestamp_id).value = (x[0].valueAsNumber + x[1].valueAsNumber)/1000;} function validate() { if (document.getElementById(\"timestamp_debut\").value < document.getElementById(\"timestamp_fin\").value) {return true;} else {alert(\"dates invalides\");return false;}}</script>",
+		"onglets_dero" : "<h3>Dérogations</h3><ul style='margin:0; padding-inline-start:0;margin-block-end:0;'>",
+		"onglet_dero" : "<li><a class='onglet' id='od%s' style='background : black;color:white;' href='/sch?der=%s'>%s</a></li>",
+		"derogation" : "</ul><div style='border:1px solid gray;'><form method='post' onsubmit='return validate();' action='/sch'>",
+		"date_debut" : "<fieldset><legend>Début</legend><input type='date' id='date_debut' name='debut' onchange='convert_to_timestamp(\"timestamp_debut\",this.name);' required>",
+		"heure_debut" : "<input type='time' id='heure_debut' name='debut' onchange='convert_to_timestamp(\"timestamp_debut\",this.name);' required></fieldset>",
+		"date_fin" : "<fieldset><legend>Fin</legend><input type='date' id='date_fin' name='fin' onchange='convert_to_timestamp(\"timestamp_fin\",this.name);' required>",
+		"heure_fin" : "<input type='time' id='heure_fin' name='fin' onchange='convert_to_timestamp(\"timestamp_fin\",this.name);' required></fieldset>",
+		"timestamps" : "<table style='width:100%;'><input type='hidden' id='timestamp_debut'><input type='hidden' id='timestamp_fin'>",
+		"button_der_save" : "</table></p><p></p><button type='submit' class='button bgrn' id='save_der' value='%d'>Enregistrer</button>",
+		"button_der_add" : "<p></p><button type='submit' id='add_der'>Ajouter</button></form>",
+		"button_der_del" : "<form method='post' action='/sch'><p></p><button type='submit' class='button bred' id='del_der' value='%d'>Supprimer</button></form></div>"
+	},
+	"main_menu" : {
+		"fp" : "<p></p><select onchange='if (this.value) { fetch(\"cm?cmnd=setfp %d\"+this.value);this.selectedIndex = 0 }'><option value=''>%s</option><option value='0'>Auto</option><option value='C'>Confort</option><option value='A'>Arrêt</option><option value='E'>Eco</option><option value='H'>Hors-gel</option><option value='1'>Eco-1</option><option value='2'>Eco-2</option></select>",
+		"relais" : "<p></p><select onchange='if (this.value) { fetch(\"cm?cmnd=setrl%20\"+this.value);this.selectedIndex = 0 }'><option value=''>Relais</option><option value='-1'>Auto</option><option value='0'>Arrêt</option><option value='1'>Marche</option><option value='3'>Boost</option></select>"
+	}
 }
+

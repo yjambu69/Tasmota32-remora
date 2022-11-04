@@ -1,27 +1,59 @@
-int NB_FP = 7 # nombre de fil pilote physique
-list int SortiesFP = [14,15,12,13,10,11,1,0,3,2,5,4,7,6] # pins du mcp23037 pour chaque fils pilotes [FP1 (14,15), FP2 (12,13),...]
-int LED_PIN = 8
-int RELAIS_PIN = 9
-modes = ['C','A','E','H','1','2','D']	# C=Confort, A=Arrêt, E=Eco, H=Hors gel, 1=Eco-1, 2=Eco-2, D=delesté
-var nivDelest = 0 # Niveau de délestage actuel (par défaut = 0 pas de délestage)
-var maxnivDelest = 0 # Niveau de délestage maximum atteint
-var plusAncienneZoneDelestee = 1 # Numéro de la zone qui est délestée depuis le plus de temps entre 1 et nombre de zones configurées size(fps)
-timer_delestage = 60000 # 60000 1min valeur de la temporisation pour faire tourner les délestages
-var fps
-fps = []
-
 import string
 import json
 import persist
 
-class fp : list
-	var nom, phy_id, etat, etat_mem, conf12, pin1, pin2
+int NB_FP = 7 # nombre de fil pilote physique
+list int SortiesFP = [14,15,12,13,10,11,1,0,3,2,5,4,7,6] # pins du mcp23037 pour chaque fils pilotes [FP1 (14,15), FP2 (12,13),...]
+int LED_PIN = 8
+int RELAIS_PIN = 9
+etat_relais_html = ['OFF','ON','Delesté','Boost']
+modes = ['C','A','E','H','1','2','D','0']	# C=Confort, A=Arrêt, E=Eco, H=Hors gel, 1=Eco-1, 2=Eco-2, D=delesté 0=Auto
+modes_html =  ['Confort','Arrêt','Eco','Hors-gel','Eco -1','Eco -2','Delesté']
+var nivDelest = 0 # Niveau de délestage actuel (par défaut = 0 pas de délestage)
+var maxnivDelest = 0 # Niveau de délestage maximum atteint
+var seuil_delest, seuil_relest, seuil_delesturg, tempo_delest, tempo_relest, timer_delestage, niv_maxdelest, _charge
+var fps
+fps = []
+if !persist.has('forcage') persist.forcage = {} end
+
+
+# DEBUT fonctions pour récupérer la configuration 
+
+def conf_get(key,default)
+	if persist.has('conf')
+		return persist.conf.find(key,default)
+	else
+		return default
+	end
+end
+
+def conf_has(key,true_value,false_value)
+	if persist.has('conf')
+		if persist.conf.find(key) return true_value
+		else return false_value
+		end
+	else return false_value
+	end
+end
+
+def conf_is(key,value,true_value,false_value)
+	if conf_get(key) == value return true_value
+	else return false_value
+	end
+end
+
+# FIN fonctions pour récupérer la configuration
+
+class fp
+	var nom, phy_id, etat, etat_auto, etat_forcage, deleste, conf12, pin1, pin2
 	def init(nom, phy_id, conf12)
 		self.nom = nom
 		self.phy_id = phy_id #1 à 7 n° de fil pilote correspondant au bornier
 		self.conf12 = conf12 # support des modes éco -1 et -2
 		self.etat = 'H'
-		self.etat_mem = 'H' # état mémorisé lors du passage au délestage pour reprendre son état après relestage
+		self.etat_auto = 'H'
+		self.etat_forcage = persist.forcage.find(str(phy_id),'0') # état du forçage 0 = pas de forçage
+		self.deleste = false
 		self.pin1 = SortiesFP[phy_id*2-2] # correspondance pin sur le mcp23017
 		self.pin2 = SortiesFP[phy_id*2-1]
 	end
@@ -35,44 +67,90 @@ if persist.has('fps')
 	end
 end
 
+#Fonctions pour la génération des signaux eco -1 et -2
+
+def eco_3_7s(FP)
+	mcp23017.cmd_pin(fps[FP-1].pin1,0)
+	mcp23017.cmd_pin(fps[FP-1].pin2,0)
+end
+
+def eco_5m(FP,timer_eco)
+	mcp23017.cmd_pin(fps[FP-1].pin1,1)
+	mcp23017.cmd_pin(fps[FP-1].pin2,1)
+	tasmota.set_timer(timer_eco*1000, /->eco_3_7s(FP), '3_7s'+str(FP))
+	tasmota.set_timer(300000, /->eco_5m(FP,timer_eco), '5m'+str(FP))
+end
+
+def add_timers_eco(FP,timer_eco)
+	tasmota.set_timer(timer_eco*1000, /->eco_3_7s(FP), '3_7s'+str(FP))
+	tasmota.set_timer(300000, /->eco_5m(FP,timer_eco), '5m'+str(FP))
+end
+
+#Fin fonctions eco
+
+class DELESTABLES : list
+	def add(FP)
+		if self.find(FP) == nil self.push(FP) end
+	end
+	def del(FP)
+		if self.find(FP) != nil self.remove(self.find(FP)) end
+	end
+end
+delestables = DELESTABLES()
+
 #- ======================================================================
 positionne les GPIOs associés au n° du fil pilote exemple : 
 setfp(1,'A') > fil pilote 1 sur arrêt
 setfp(0,'E') > tous les fils pilotes sur eco
 ====================================================================== -#
 
-def setfp(FP, value)
+def setfp(FP, value, forcage)
 	if FP == 0
 		for i:1..size(fps)
-			setfp(i, value)
+			setfp(i, value, forcage)
 		end
 	else
-		if value == 'C'
-			mcp23017.cmd_pin(fps[FP-1].pin1,0)
-			mcp23017.cmd_pin(fps[FP-1].pin2,0)
-		elif value == 'A'
-			mcp23017.cmd_pin(fps[FP-1].pin1,0)
-			mcp23017.cmd_pin(fps[FP-1].pin2,1)
-		elif value == '1' || value == '2' || value == 'E'
-			mcp23017.cmd_pin(fps[FP-1].pin1,1)
-			mcp23017.cmd_pin(fps[FP-1].pin2,1)
-			if !fps[FP-1].conf12 value = 'E' end # si eco -1 et -2 non supporté les fils pilotes sont mis sur eco
-		elif value == 'H' || value == 'D'
-			mcp23017.cmd_pin(fps[FP-1].pin1,1)
-			mcp23017.cmd_pin(fps[FP-1].pin2,0)
+		tasmota.remove_timer('5m'+str(FP))
+		tasmota.remove_timer('3_7s'+str(FP))
+		if !forcage && value != 'd' && value !='D' fps[FP-1].etat_auto = value
+		elif forcage
+			fps[FP-1].etat_forcage = value
+			persist.forcage.setitem(str(fps[FP-1].phy_id),value)
+			persist.save()
+		elif value == 'd'
+			fps[FP-1].deleste = false #relestage du fil pilote
+			delestables.del(FP)
 		end
-	fps[FP-1].etat = value
-	end
-end
-
-# passe un fil pilote à l'ordre suivant de la liste modes 'C','A','E','H','1','2'
-# exemple : FP1 est à C il passe à A
-def inc_etat_FP(FP)
-	if fps[FP-1].etat != 'D'
-		if fps[FP-1].conf12
-			setfp(FP,modes[ (((modes.find(fps[FP-1].etat)+1) % 6)+1)-1 ])
-		else
-			setfp(FP,modes[ (((modes.find(fps[FP-1].etat)+1) % 4)+1)-1 ])
+		
+		if value != 'D'
+				if fps[FP-1].etat_forcage == '0' value = fps[FP-1].etat_auto
+				else value = fps[FP-1].etat_forcage end
+		end
+		
+		if !fps[FP-1].deleste
+			if ['C','1','2','E'].find(value) != nil delestables.add(FP)
+			elif ['A','H'].find(value) != nil delestables.del(FP)
+			end
+			
+			if value == 'C'
+				mcp23017.cmd_pin(fps[FP-1].pin1,0)
+				mcp23017.cmd_pin(fps[FP-1].pin2,0)
+			elif value == 'A'
+				mcp23017.cmd_pin(fps[FP-1].pin1,0)
+				mcp23017.cmd_pin(fps[FP-1].pin2,1)
+			elif value == '1' || value == '2' || value == 'E'
+				mcp23017.cmd_pin(fps[FP-1].pin1,1)
+				mcp23017.cmd_pin(fps[FP-1].pin2,1)
+				if !fps[FP-1].conf12 value = 'E' # si eco -1 et -2 non supporté les fils pilotes sont mis sur eco
+				elif value == '1' add_timers_eco(FP,3)
+				elif value == '2' add_timers_eco(FP,7)
+				end
+			elif value == 'H' || value == 'D'
+				mcp23017.cmd_pin(fps[FP-1].pin1,1)
+				mcp23017.cmd_pin(fps[FP-1].pin2,0)
+				if value == 'D' fps[FP-1].deleste = true end
+			end
+			fps[FP-1].etat = value
 		end
 	end
 end
@@ -95,7 +173,7 @@ setfp 0E > met tous les fils pilote sur eco
 setfp AE > met fil pilote 1 sur arrêt 2 sur eco
 setfp A-----C > met fil pilote 1 sur arrêt 7 sur confort,
 le tiret peut être remplacer par n'importe quelle autre caractère tant que ce n'est pas 1 à 7 ou C,A,E,H,1,2
-attention à les commandes 1 et 11 12 2 21 22 sont abigües 11 par exemple peut signifier mettre le fil1 sur eco-1 ou fil1 et fil2 sur eco-1
+attention aux commandes 1 et 11 12 2 21 22 sont abigües 11 par exemple peut signifier mettre le fil 1 sur eco-1 ou fil 1 et fil 2 sur eco-1
 pour y palier les commandes pour positionner plusieurs fils pilotes devront être composé d'au moins 3 caractères.
 exemple : 11- pour fil 1 et 2 sur eco -1, 11 pour juste le fil pilote sur eco -1
 ====================================================================== -#
@@ -105,14 +183,14 @@ def cmd_setfp(cmd, idx, payload, payload_json)
 		tasmota.resp_cmnd('{"setfp" : "'+etats_FP()+'"}')
 	elif size(payload) > 2 && size(payload) <= size(fps) # commande de plus de 3 caractères = positionnement d'un trait des fils pilotes
 		for i:0..size(payload)-1
-			if modes.find(payload[i]) != nil
-				setfp(i+1,payload[i])
+			if modes.find(payload[i]) != nil || payload[i] == '0'
+				setfp(i+1,payload[i],true)
 			end
 		end
 	tasmota.resp_cmnd('{"setfp" : "'+etats_FP()+'"}')
 	elif size(payload) == 2 && int(payload[0]) >= 0 && int(payload[0]) <= size(fps) # commande à 2 caractères
-		if modes.find(payload[1]) != nil
-			setfp(int(payload[0]),payload[1])
+		if modes.find(payload[1]) != nil || payload[1] == '0'
+			setfp(int(payload[0]),payload[1],true)
 			tasmota.resp_cmnd('{"setfp" : "'+etats_FP()+'"}')
 		else
 			tasmota.resp_cmnd('{"setfp" : "paramètres invalides"}') # erreur de saisie des paramètres
@@ -122,137 +200,192 @@ def cmd_setfp(cmd, idx, payload, payload_json)
 	end
 end
 
-# DEBUT GENERATION DES SIGNAUX POUR LES MODES ECO -1 et -2
+# DEBUT GESTION DU RELAIS
 
-def timer_3s()
-	for i:1..size(fps)
-		if fps[i-1].etat == '1'
-			mcp23017.cmd_pin(fps[i-1].pin1,0)
-			mcp23017.cmd_pin(fps[i-1].pin2,0)
+class RELAIS : Driver
+	var etat_phy, inverse, etat_cmd, etat_auto, etat_forcage,delest
+	
+	def init()
+		self.etat_phy = mcp23017.get_pin(RELAIS_PIN)
+		self.inverse = conf_has('invers',true)
+		self.etat_cmd = 0
+		self.etat_auto = 0
+		self.delest = false
+		self.etat_forcage = persist.forcage.find('8',-1)
+	end
+	
+	def set(etat,forcage) # etat int -1=auto 0=arret 1=marche 2=delesté 3x=boost (x multiple de 1/2h)
+		if forcage
+			self.etat_forcage = etat
+			persist.forcage.setitem('8',etat)
+			persist.save()
+		elif !forcage && etat !=2 self.etat_auto = etat
+		elif etat == 2 self.delest = true
+		end
+		
+		self.etat_cmd = self.etat_auto
+		if self.etat_forcage != -1 self.etat_cmd = self.etat_forcage end
+		if self.delest self.etat_cmd = 2 end
+		
+		if conf_has('delest_relais',true)
+			if self.etat_cmd == 0 delestables.del(8)
+			elif self.etat_cmd != 2 delestables.add(8) end
+		end
+		
+		if self.etat_cmd == 2 || self.etat_cmd == 0 etat = 0 else etat = 1 end
+		
+		mcp23017.cmd_pin(LED_PIN,etat)
+		if self.inverse self.etat_phy = int(!etat)
+		else self.etat_phy = etat end
+		mcp23017.cmd_pin(RELAIS_PIN,self.etat_phy)
+	end
+
+	def get()
+		var etat
+		self.etat_phy = mcp23017.get_pin(RELAIS_PIN)
+		etat = self.etat_phy
+		if self.inverse etat = !etat end
+		return int(etat)
+	end
+
+	def every_second()
+		if conf_is('gest_relais','tele',true)
+			if (json.load(tasmota.read_sensors())['TIC']['PTEC'] == 'HC' || json.load(tasmota.read_sensors())['TIC']['RELAIS'] == '1')
+				self.set(1)
+			else
+				self.set(0)
+			end
 		end
 	end
 end
 
-def timer_7s()
-	for i:1..size(fps)
-		if fps[i-1].etat == '2'
-			mcp23017.cmd_pin(fps[i-1].pin1,0)
-			mcp23017.cmd_pin(fps[i-1].pin2,0)
-		end
-	end
+relais = RELAIS()
+
+def cmd_setrl(cmd, idx, payload, payload_json)
+	if ['-1','0','1','3'].find(payload) >= 0 relais.set(int(payload),true) end
+	tasmota.resp_cmnd('{"setrl" : "'+str(relais.get())+'"}')
 end
 
-def timer_5m()
-	for i:1..size(fps)
-		if fps[i-1].etat == '1' || fps[i-1].etat == '2'
-			mcp23017.cmd_pin(fps[i-1].pin1,1)
-			mcp23017.cmd_pin(fps[i-1].pin2,1)
-		end
-	end
-	tasmota.set_timer(300000, timer_5m) #relance la fonction dans 5 minutes
-	tasmota.set_timer(3000, timer_3s) # remet les pins à 0 dans 3s pour les fils pilotes en eco -1 
-	tasmota.set_timer(7000, timer_7s) # remet les pins à 0 dans 7s pour les fils pilotes en eco -2
+if conf_has('relais',true)
+	tasmota.add_driver(relais)
+	tasmota.add_cmd('setrl', cmd_setrl)
+	relais.set(0)
 end
 
-# FIN GENERATION DES SIGNAUX POUR LES MODES ECO -1 et -2
+# FIN GESTION DU RELAIS
 
 # DEBUT GESTION DU DELESTAGE
 
-#- ======================================================================
-Function: delester1zone
-Purpose : déleste une zone de plus
-Input   : variables globales nivDelest et plusAncienneZoneDelestee
-Output  : màj variable globale nivDelest
-Comments: code repris sur https://github.com/hallard/remora_soft
-====================================================================== -#
+seuil_delest = int(conf_get('seuil_delest',90))
+seuil_relest = int(conf_get('seuil_relest',70))
+seuil_delesturg = int(conf_get('seuil_delesturg',95))
+tempo_delest = int(conf_get('tempo_delest',1))
+tempo_relest = int(conf_get('tempo_relest',30))
+timer_delestage = int(conf_get('timer_delestage',60)) # 60 1min valeur de la temporisation pour faire tourner les délestages
 
 def delester1zone(decalage)
-	var FP
-	if nivDelest == 0 && !decalage # ne tient pas compte si la commande est lancée depuis la fonction decalerDelestage
-		log('délestage enclenché',1)
-	end
-	if nivDelest < size(fps) #On s'assure que l'on n'est pas au niveau max
-		nivDelest +=1
-		FP = ((plusAncienneZoneDelestee-1 + nivDelest-1) % size(fps))+1
-		fps[FP-1].etat_mem = fps[FP-1].etat # mémorise l'état du fil pilote avant le délestage
-		setfp(FP, 'D')
-		log('fil pilote '+fps[FP-1].nom+' delesté',3)
-	end
-	if maxnivDelest < nivDelest
-	maxnivDelest = nivDelest #mémorise le niveau de délestage le plus élevé atteint
+	if nivDelest == 0 && !decalage log('délestage enclenché',1) end # ne tient pas compte si la commande est lancée depuis la fonction decalerDelestage
+	if nivDelest < size(delestables) #On s'assure que l'on n'est pas au niveau max
+		nivDelest += 1
+		if delestables[nivDelest-1] == 8
+			relais.set(2)
+			log('relais delesté',3)
+		else
+			setfp(delestables[nivDelest-1],'D')
+			log('fil pilote '+fps[delestables[nivDelest-1]-1].nom+' delesté',3)
+		end
+		if maxnivDelest < nivDelest maxnivDelest = nivDelest end #mémorise le niveau de délestage le plus élevé atteint
 	end
 end
 
-#- ======================================================================
-Function: relester1zone
-Purpose : retire le délestage d'une zone
-Input   : variables globales nivDelest et plusAncienneZoneDelestee
-Output  : màj variable globale nivDelest et plusAncienneZoneDelestee
-Comments: code repris sur https://github.com/hallard/remora_soft
-====================================================================== -#
-
 def relester1zone(decalage)
-	var FP
 	if nivDelest > 0 #On s'assure qu'un délestage est en cours
-		nivDelest -=1
-		FP = plusAncienneZoneDelestee
-		setfp(FP,fps[FP-1].etat_mem) #On remet le fil pilote à ça valeur avant délestage
-		log('fil pilote '+fps[FP-1].nom+' relesté',3)
-		plusAncienneZoneDelestee = (plusAncienneZoneDelestee % size(fps)) + 1
+		if delestables[0] == 8
+			relais.delest = false
+			delestables.del(8)
+			relais.set(relais.etat_auto)
+			log('relais relesté',3)
+		else
+			log('fil pilote '+fps[delestables[0]-1].nom+' relesté',3)
+			setfp(delestables[0],'d')
+		end
+		nivDelest -= 1
 	end
 	if nivDelest == 0 && !decalage && maxnivDelest > 0 # ne tient pas compte si la commande est lancée depuis la fonction decalerDelestage
+		tasmota.remove_timer('timer_delest')
+		tasmota.remove_timer('timer_decalage')
+		tasmota.remove_timer('timer_relest')
 		log('fin délestage, niveau de délestage atteint = '+str(maxnivDelest),1)
 		maxnivDelest = 0
 	end
 end
 
-#- ======================================================================
-Function: decalerDelestage
-Purpose : fait tourner la ou les zones délestées
-Input   : variables globales nivDelest et plusAncienneZoneDelestee
-Output  : màj variable globale plusAncienneZoneDelestee
-Comments: code repris sur https://github.com/hallard/remora_soft
-====================================================================== -#
-
 def decalerDelestage()
-	if nivDelest > 0 && nivDelest < size(fps) #On ne peut pas faire tourner les zones délestées s'il n'y en a aucune en cours de délestage, ou si elles le sont toutes
+	if nivDelest > 0 && nivDelest < size(delestables) #On ne peut pas faire tourner les zones délestées s'il n'y en a aucune en cours de délestage, ou si elles le sont toutes
 		relester1zone(true)
 		delester1zone(true)
 	end
-	tasmota.set_timer(timer_delestage, decalerDelestage) #relance la fonction de rotation des zones délestées après la temporisation
+	tasmota.set_timer(timer_delestage*1000, decalerDelestage,'timer_decalage') #relance la fonction de rotation des zones délestées après la temporisation
 end
 
 def toutdelester()
 	log("délestage d'urgence enclenché",1)
-	while nivDelest <= (size(fps)-1)
+	while size(delestables) > nivDelest
 		delester1zone(true)
 	end
 end
 
-def cmd_delest(cmd, idx, payload, payload_json)
-	delester1zone(false)
-	tasmota.resp_cmnd_done()
+def timer_relest()
+	if _charge < seuil_relest relester1zone(false) end
+	tasmota.set_timer(tempo_relest*1000, timer_relest, 'timer_relest')
 end
 
-def cmd_relest(cmd, idx, payload, payload_json)
-	relester1zone(false)
-	tasmota.resp_cmnd_done()
+def timer_delest()
+	if _charge > seuil_delest delester1zone(false) end
+	tasmota.set_timer(tempo_delest*1000, timer_delest, 'timer_delest')
 end
 
-def cmd_delesturg(cmd, idx, payload, payload_json)
-	toutdelester()
-	tasmota.resp_cmnd_done()
+def charge(value)
+	_charge = value
+	if _charge > seuil_delest
+		if nivDelest == 0
+			tasmota.set_timer(timer_delestage*1000, decalerDelestage,'timer_decalage')
+			tasmota.set_timer(tempo_relest*1000, timer_relest, 'timer_relest')
+			tasmota.set_timer(tempo_delest*1000, timer_delest, 'timer_delest')
+			if _charge < seuil_delesturg delester1zone(false) end
+		end
+		if _charge > seuil_delesturg toutdelester() end
+	end
+end
+
+if conf_has('delest',true)
+	tasmota.add_rule(conf_get('driver','ENERGY')+'#'+conf_get('sensor','Load'),def (value) charge(value) end )
 end
 
 #FIN GESTION DU DELESTAGE
 
+class MQTT : Driver
+
+	def json_append()
+		var msg
+		msg=',"REMORA":{'
+		if conf_has('relais',true) msg += '"relais":"'+etat_relais_html[relais.etat_cmd]+'"' end
+		if size(fps) > 0
+			for i:1..size(fps)
+				if size(msg) > 10 msg += ',' end
+				msg += '"'+fps[i-1].nom+'":"'+modes_html[modes.find(fps[i-1].etat)]+'"'
+			end
+		end
+		msg +='}'
+		tasmota.response_append(msg)
+	end
+end
+mqtt = MQTT()
+
 if size(fps) > 0 # ajoute les commandes à la console et lance les timers si au moins un fil pilote configuré.
 	tasmota.add_cmd('setfp', cmd_setfp)
-	tasmota.add_cmd('delest', cmd_delest)
-	tasmota.add_cmd('relest', cmd_relest)
-	tasmota.add_cmd('delesturg', cmd_delesturg)
-	timer_5m()
-	decalerDelestage() #lance la fonction de rotation des zones délestées après la temporisation
-	setfp(0,'H')
 end
 
+if conf_has('mqtt',true)
+	tasmota.add_driver(mqtt)
+end
