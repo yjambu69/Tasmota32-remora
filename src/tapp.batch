@@ -1,3 +1,3 @@
 #!/bin/bash
 zip -Z store ../remora.tapp autoexec.be mcp23017.be pilote.be schedule.be web_interface.be html.json
-zip -j -Z store ../test/remora.tapp autoexec.be fake/mcp23017.be pilote.be schedule.be web_interface.be html.json
+zip -j -Z store ../demo/remora.tapp autoexec.be fake/mcp23017.be pilote.be schedule.be web_interface.be html.json
