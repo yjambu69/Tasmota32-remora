@@ -31,12 +31,17 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller 
   - Remora en mode supervisé, passer les commandes depuis une box domotique par requette http.<br>
     http://IP_DE_LA_REMORA/cm?cmnd=setfp%20<paramètres ex:0C ou AAA-CE><br>
     exemples :<br>
-    http://IP_DE_LA_REMORA/cm?cmnd=setfp%201E > 2E fil pilote 2 (2) sur éco (E)<br>
+    http://IP_DE_LA_REMORA/cm?cmnd=setfp%202E > 2E fil pilote 2 (2) sur éco (E)<br>
     http://IP_DE_LA_REMORA/cm?cmnd=setfp%200C > 0C tous les fils pilotes (0) sur confort (C)<br>
     http://IP_DE_LA_REMORA/cm?cmnd=setfp%20AAA-CE > 3 premiers fils sur arrêt (A) ne rien faire pour le 4, le 5 sur confort, le 6 sur éco<br>
     Ordre A arrêt, H hors gel, C confort, E éco, 1 eco -1, 2 éco -2. (si éco -1 et -2 non déclaré comme supporté passage sur éco)
  
 ## TODO
+  - Rendre le code plus propre !
+  - Sortir du persist la programmation horaire et la mettre dans un fichier à part en json.
+  - Revoir la page de programmation horaire pour plus de lisibilité. Piste : synthèse sur une page des déclenchements pour une semaine.
+  - Créer des groupes de fil pilote.
+  - Gérer les abonnements tripahsés, délestages indépendants pour chaque phase.
   - <strike>gérer les modes eco-1 et eco-2. Reprendre la solution sur : https://github.com/bronco0/remora_soft</strike>
   - gérer les autres composants de la remora : le relais, les leds. Fait mais non testé en réel.
   - faire remonter les commandes et états en mqtt. Fait pour les états mais non testé en réel.
