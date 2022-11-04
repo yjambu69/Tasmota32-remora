@@ -41,7 +41,7 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller 
   - Sortir du persist la programmation horaire et la mettre dans un fichier à part en json.
   - Revoir la page de programmation horaire pour plus de lisibilité. Piste : synthèse sur une page des déclenchements pour une semaine.
   - Créer des groupes de fil pilote.
-  - Gérer les abonnements tripahsés, délestages indépendants pour chaque phase.
+  - Gérer les abonnements triphasés, délestages indépendants pour chaque phase.
   - <strike>gérer les modes eco-1 et eco-2. Reprendre la solution sur : https://github.com/bronco0/remora_soft</strike>
   - gérer les autres composants de la remora : le relais, les leds. Fait mais non testé en réel.
   - faire remonter les commandes et états en mqtt. Fait pour les états mais non testé en réel.
