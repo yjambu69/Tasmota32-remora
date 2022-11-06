@@ -200,9 +200,6 @@ def init_schedules() #cherche et applique les commandes précédentes les plus p
 			end
 		end
 	end
-	for i:0..size(fps)-1
-		if !cmds.has(fps[i].phy_id) cmds.insert(fps[i].phy_id,'H') end # initialise les fils pilotes qui n'ont pas de programmation sur hors-gel
-	end
 	#applique les commandes			
 	if size(cmds) > 0 set_cmds(cmds) end
 end
