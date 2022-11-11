@@ -106,6 +106,8 @@ setfp(0,'E') > tous les fils pilotes sur eco
 
 def setfp(FP, value, forcage)
 	
+	if FP == nil return nil end
+	
 	if FP == 0 #commande pour tous les fils pilotes
 		for i:1..size(fps)
 			setfp(i, value, forcage)
@@ -166,6 +168,16 @@ def setfp(FP, value, forcage)
 	end
 end
 
+def find_FP_from_phy_id(FP_phy_id)
+	if FP_phy_id == 0 return 0 end
+	var j = 0
+	while j < size(fps)
+		if fps[j].phy_id == FP_phy_id return j+1 end
+		j +=1
+	end
+	return nil
+end
+
 def etats_FP() # retourne l'état des fils pilotes dans ce format [FP1=A,FP2=A,FP3=E...]
 	var msg
 	msg='['
@@ -179,6 +191,7 @@ end
 
 #- ======================================================================
 commande dans la console usage et utilisable en http (http://<ip de la remora>/cm?cmnd=setfp%20<paramètres ex:0C ou AAA-CE>):
+les numéros de fil pilote corresponde à ceux du bornier.
 setfp 1A > met le fil pilote 1 sur arrêt
 setfp 0E > met tous les fils pilote sur eco
 setfp AE > met fil pilote 1 sur arrêt 2 sur eco
@@ -192,16 +205,16 @@ exemple : 11- pour fil 1 et 2 sur eco -1, 11 pour juste le fil pilote sur eco -1
 def cmd_setfp(cmd, idx, payload, payload_json)
 	if payload == ""  # setfp sans arguments
 		tasmota.resp_cmnd('{"setfp" : "'+etats_FP()+'"}')
-	elif size(payload) > 2 && size(payload) <= size(fps) # commande de plus de 3 caractères = positionnement d'un trait des fils pilotes
+	elif size(payload) > 2 && size(payload) <= NB_FP # commande de plus de 3 caractères = positionnement d'un trait des fils pilotes
 		for i:0..size(payload)-1
-			if modes.find(payload[i]) != nil || payload[i] == '0'
-				setfp(i+1,payload[i],true)
+			if modes.find(payload[i]) != nil && payload[i] != 'D'
+				setfp(find_FP_from_phy_id(i+1),payload[i],true)
 			end
 		end
 	tasmota.resp_cmnd('{"setfp" : "'+etats_FP()+'"}')
-	elif size(payload) == 2 && int(payload[0]) >= 0 && int(payload[0]) <= size(fps) # commande à 2 caractères
-		if modes.find(payload[1]) != nil || payload[1] == '0'
-			setfp(int(payload[0]),payload[1],true)
+	elif size(payload) == 2 && int(payload[0]) >= 0 && int(payload[0]) <= NB_FP # commande à 2 caractères
+		if modes.find(payload[1]) != nil && payload[1] != 'D'
+			setfp(find_FP_from_phy_id(int(payload[0])),payload[1],true)
 			tasmota.resp_cmnd('{"setfp" : "'+etats_FP()+'"}')
 		else
 			tasmota.resp_cmnd('{"setfp" : "paramètres invalides"}') # erreur de saisie des paramètres

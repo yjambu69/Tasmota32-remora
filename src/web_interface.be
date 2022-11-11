@@ -16,7 +16,7 @@ class WEB_INTERFACE : Driver
 		html = ""
 		if size(fps) > 0 
 			for i:1..size(fps)
-				html += string.format(html_json['fp'],i,fps[i-1].nom)
+				html += string.format(html_json['fp'],fps[i-1].phy_id,fps[i-1].nom)
 			end
 			html += string.format(html_json['fp'],0,'Tous les fils pilotes')
 		end

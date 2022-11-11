@@ -1,5 +1,5 @@
 var schedules = {}, derogations = {}
-var _time_initialized = false
+var time_initialized = false
 if !persist.has('schedules') persist.schedules = {} end
 if !persist.has('derogations') persist.derogations = {} end
 
@@ -187,7 +187,7 @@ def sort_cmds()
 end
 
 def init_schedules() #cherche et applique les commandes précédentes les plus proches.
-	if !_time_initialized return nil end # ne fait rien si l'heure n'a pas été initialisée.
+	if !time_initialized return nil end # ne fait rien si l'heure n'a pas été initialisée.
 	var cmds = CMDS()
 	if size(schedules) > 0 cmds = sort_cmds() end
 	#applique les dérogations
@@ -292,10 +292,14 @@ schedules_to_persist() #sauvegarde les programmes horaires si des fils pilotes o
 derogations_load_from_persist()
 derogations_to_persist()
 
-def time_initialized()
-	_time_initialized = true
+def time_set()
+	if !time_initialized
+		tasmota.add_cron('* */1 * * * *',every_minute) # les crons ne fonctionnent pas si l'heure n'est pas à jour. (date > 01/01/2016)
+		time_initialized = true
+	end
 	init_schedules()
-	tasmota.add_cron('* */1 * * * *',every_minute) # les crons ne fonctionnent pas s'il n'y a pas eu de synchro ntp.
 end
 
-tasmota.add_rule('Time#Initialized',time_initialized)
+if tasmota.rtc().find('utc') > 1640995200 time_set() # on considère que l'heure est à jour si la date > 01/01/2022. Cas avec un module rtc externe.
+else tasmota.add_rule('Time#Initialized',time_set) end # après 1er synchro ntp, jamais enclenché avec un module rtc externe 
+tasmota.add_rule('Time#Set',time_set) # à chaque modification d'heure, synchro ntp toutes les heures. Utile pour les changements heure été/hiver ?
