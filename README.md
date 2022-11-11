@@ -35,7 +35,7 @@ Inspiré de https://github.com/Beormund/Tasmota32-Multi-Zone-Heating-Controller 
     http://IP_DE_LA_REMORA/cm?cmnd=setfp%200C > 0C tous les fils pilotes (0) sur confort (C)<br>
     http://IP_DE_LA_REMORA/cm?cmnd=setfp%20AAA-CE > 3 premiers fils sur arrêt (A) ne rien faire pour le 4, le 5 sur confort, le 6 sur éco<br>
     Ordre A arrêt, H hors gel, C confort, E éco, 1 eco -1, 2 éco -2. (si éco -1 et -2 non déclaré comme supporté passage sur éco)<br>
-    Attention la numérotation des fils pilotes suit l'ordre des sorties physiques mais saute celles qui ne sont pas configurées. Par exemple : les fils pilotes seul 1,3 et 7 sont configurés, 3 sera vu comme le fil pilote 2 et 7 comme le 3. Il vaut mieux câbler les fils dans l'ordre en partant de la borne 1 et sans laisser de bornes vides. 
+    Attention la numérotation des fils pilotes suit l'ordre des sorties physiques même s'ils ne sont pas configurés. 
  
 ## TODO
   - Rendre le code plus propre !
