@@ -14,15 +14,11 @@ class WEB_INTERFACE : Driver
 		html_json = self.load_json('main_menu')
 		tasmota.delay(1)
 		html = ""
-		if size(fps) > 0 
-			for i:1..size(fps)
-				html += string.format(html_json['fp'],fps[i-1].phy_id,fps[i-1].nom)
-			end
-			html += string.format(html_json['fp'],0,'Tous les fils pilotes')
+		for i:fps.keys_o
+			html += string.format(html_json['fp'], i, fps[i].nom)
 		end
-		if conf_has('relais',true)
-			html += html_json['relais']
-		end
+		if size(fps) > 0 html += string.format(html_json['fp'],0,'Tous les fils pilotes') end
+		if conf_has('relais',true)	html += html_json['relais'] end
 		webserver.content_send(html)
 	end
 		
@@ -34,50 +30,42 @@ class WEB_INTERFACE : Driver
 
 	def web_sensor()
 		var msg, color
-		if size(fps) > 0
-			msg = ''
-			for i:1..size(fps)
-				color = ''
-				if fps[i-1].etat_forcage != '0' color = '#FF0000' end
-				if fps[i-1].deleste == true color = '#FFFF00' end
-				msg += string.format("{s}%s{m}<font color='%s'>%s</font> {e}", fps[i-1].nom, color, modes_html[modes.find(fps[i-1].etat)])
-			end
-			tasmota.web_send_decimal(msg)
+		msg = ''
+		for i:fps.keys_o
+			color = ''
+			if fps[i].etat_forcage != '0' color = '#FF0000' end
+			if fps[i].deleste == true color = '#FFFF00' end
+			msg += string.format("{s}%s{m}<font color='%s'>%s</font> {e}", fps[i].nom, color, modes_html[modes.find(fps[i].etat)])
 		end
 		if conf_has('relais',true)
-			msg =''
 			color =  ''
 			if relais.etat_forcage !=-1 color = '#FF0000' end
 			if relais.delest color = '#FFFF00' end
-			msg = string.format("{s}Relais{m}<font color='%s'>%s</font> {e}", color,etat_relais_html[relais.etat_cmd])
-			tasmota.web_send_decimal(msg)
+			msg += string.format("{s}Relais{m}<font color='%s'>%s</font> {e}", color,etat_relais_html[relais.etat_cmd])
 		end
+		tasmota.web_send_decimal(msg)
 	end
 
   # page pour la configuration des fils pilotes
 	def create_html_content_conf_fp()
-		var html, html_json, j, eco, nom, checked, disabled
+		var html, html_json, j
 		html_json = self.load_json('menu_fp_conf')
 		html = html_json['script']
-		if size(fps) > 0 j = 0 else j= -1 end
 		for i :1..NB_FP
-			eco = ''
-			nom = 'FP'+str(i)
-			checked = ''
-			disabled = 'disabled'
-			if j >= 0 && j <= size(fps)-1
-				if i == fps[j].phy_id
-					if fps[j].conf12 eco='checked' end
-					nom = fps[j].nom
-					checked = 'checked'
-					disabled = ''
-					j += 1
-				end
-			end
-			html += string.format(html_json['field_fp'],i,disabled,i,i,checked,i)..
-			string.format(html_json['nom'],i,nom)..
-			string.format(html_json['eco'],i,eco)
+			html += string.format(html_json['field_fp'],i,i,i,i,i)..
+			string.format(html_json['nom'],i,i,'FP'+str(i))..
+			string.format(html_json['phase'],i,i)..
+			string.format(html_json['eco'],i,i)
 		end
+		html +="<script type='text/javascript'>window.onload = onpageload(); function onpageload() {"
+		for i:persist.fps.keys()
+			html +="document.getElementById('"+i+"').disabled = false;"..
+			"document.getElementById('FP_use"+i+"').checked = true;"..
+			"document.getElementById('nom"+i+"').value = '"+persist.fps.item(i)[0]+"';"..
+			"document.getElementById('fpphase"+i+"').selectedIndex = "+str(int(persist.fps.item(i)[2])-1)+";"
+			if bool(persist.fps.item(i)[1]) html += "document.getElementById('conf12"+i+"').checked = true;" end
+		end
+		html += "}</script>"
 		html += html_json['button_conf_save'] + '</form>'
 		return html
 	end
@@ -93,14 +81,14 @@ class WEB_INTERFACE : Driver
 	end
 
 	def page_conf_FP_POST()
-	var j , conf12
-		persist.fps = []
+	var j, conf12
+		persist.fps = {}
 		if webserver.arg_size() > 0
 			for i:1 .. NB_FP
 				j = str(i)
 				if webserver.has_arg('FP_use'+j)
 					if webserver.has_arg('conf12'+j) conf12 = true else conf12 = false end
-					persist.fps.push([webserver.arg('nom'+j), i, conf12])
+					persist.fps.insert(i, [webserver.arg('nom'+j), conf12, int(webserver.arg('fpphase'+j))])
 				end				
 			end
 		end
@@ -114,25 +102,37 @@ class WEB_INTERFACE : Driver
 		var html, html_json
 		html_json = self.load_json('menu_ge_conf')
 		html = html_json['script']..
+		html_json['script2']..
 		string.format(html_json['field_delest'],conf_has('delest','','disabled'),conf_has('delest','checked',''))..
-		string.format(html_json['capteur_teleinfo'],conf_is('capteur_delest','teleinfo','checked',conf_is('capteur_delest','autre','','checked')))..
-		string.format(html_json['capteur_autre'],conf_is('capteur_delest','autre','checked',''))..
-		string.format(html_json['field_autre'],conf_is('capteur_delest','autre','','disabled'))..
-		string.format(html_json['driver'],conf_get('driver','ENERGY'))..
-		string.format(html_json['sensor'], conf_get('sensor','Power')) + '</fieldset>'..
-		string.format(html_json['se1'],int(conf_get('seuil_delest',90)))..
-		string.format(html_json['se2'],int(conf_get('seuil_relest',70)))..
-		string.format(html_json['se3'],int(conf_get('seuil_delesturg',95)))..
-		string.format(html_json['t1'],int(conf_get('tempo_delest',1)))..
+		html_json['triphase']..
+		html_json['field_teleinfo']..
+		string.format(html_json['linky'],conf_has('linky','checked',''))..
+		html_json['field_autre']..
+		string.format(html_json['driver1'],conf_get('driver1','ENERGY'))..
+		string.format(html_json['sensor1'],conf_get('sensor1','Power1'))..
+		string.format(html_json['driver2'],conf_get('driver2','ENERGY'))..
+		string.format(html_json['sensor2'],conf_get('sensor2','Power2'))..
+		string.format(html_json['driver3'],conf_get('driver3','ENERGY'))..
+		string.format(html_json['sensor3'],conf_get('sensor3','Power3'))..
+		string.format(html_json['se1'],int(conf_get('seuil_delest',100)))..
+		string.format(html_json['se2'],int(conf_get('seuil_relest',80)))..
+		string.format(html_json['se3'],int(conf_get('seuil_delesturg',140)))..
+		string.format(html_json['t1'],int(conf_get('tempo_delest',5)))..
 		string.format(html_json['t2'],int(conf_get('tempo_relest',30)))..
-		string.format(html_json['t3'],int(conf_get('timer_delestage',120))) + '</fieldset>'..
+		string.format(html_json['t3'],int(conf_get('timer_delestage',120)))..
 		string.format(html_json['field_relais'],conf_has('relais','','disabled'),conf_has('relais','checked',''))..
+		html_json['phase_relais']..
 		string.format(html_json['relais_tele'],conf_is('gest_relais','teleinfo','checked',conf_is('gest_relais','prog','','checked')))..
 		string.format(html_json['relais_prog'],conf_is('gest_relais','prog','checked',''))..
 		string.format(html_json['delest_relais'],conf_has('delest_relais','checked',''))..
 		string.format(html_json['invers_relais'],conf_has('invers','checked',''))..
 		string.format(html_json['field_autre_option'],conf_has('mqtt','checked',''))..
-		html_json['button_conf_save'] + '</form>'
+		html_json['button_conf_save'] + '</form>'..
+		"<script type='text/javascript'>window.onload = onpageload(); function onpageload() {"..
+		"document.getElementById('phase_relais').selectedIndex = "+conf_get('phase_relais','1')+";"..
+		"document.getElementById('teleinfo').checked ="+conf_is('capteur_delest','teleinfo','true','false')+";"..
+		"document.getElementById('autre').checked ="+conf_is('capteur_delest','autre','true','false')+";"..
+		"document.getElementById('triphase').checked = "+conf_is('triphase', 'true', 'true', 'false')+";}</script>"
 		return html
 	end
 	
@@ -183,10 +183,8 @@ class WEB_INTERFACE : Driver
 			html_json['schedule']..
 			html_json['heure']..
 			html_json['jours']
-			if size(fps) > 0
-				for j:0..size(fps)-1
-					html += string.format(html_json['fp'],fps[j].nom,fps[j].phy_id)
-				end
+			for j:fps.keys()
+				html += string.format(html_json['fp'],fps[j].nom,j)
 			end
 			if conf_is('gest_relais','prog',true) html += html_json['relais'] end
 			html += string.format(html_json['button_sch_save'],sch)..
@@ -212,10 +210,8 @@ class WEB_INTERFACE : Driver
 			html_json['date_fin']..
 			html_json['heure_fin']..
 			html_json['timestamps']
-			if size(fps) > 0
-				for j:0..size(fps)-1
-					html += string.format(html_json['fp'],fps[j].nom,fps[j].phy_id)
-				end
+			for j:fps.keys()
+				html += string.format(html_json['fp'],fps[j].nom,j)
 			end
 			if conf_is('gest_relais','prog',true) html += html_json['relais'] end
 			html += string.format(html_json['button_der_save'],der)..

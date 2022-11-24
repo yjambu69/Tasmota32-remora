@@ -63,28 +63,19 @@ class DEROGATION
 		return [self.timestamp_debut,self.timestamp_fin,self.cmds.to_list()]
 	end
 end
-	
+
 def cmd_is_valid(cmd)
-	var i
-	i = 0
 	if (cmd == 8) && (conf_is('gest_relais','prog',true,false)) return true
-	else
-		while i < size(fps)
-			if cmd == fps[i].phy_id return true end
-			i +=1
-		end
+	elif fps.contains(cmd) return true
 	end
 	return false
 end
 
 def set_cmds(cmds)
-	var i
 	for k:cmds.keys()
 		if k == 8 relais.set(cmds.item(k))
 		else
-			i = 0
-			while fps[i].phy_id != k i += 1 end
-			setfp(i+1,cmds.item(k),false)
+			setfp(k,cmds.item(k),false)
 		end
 	end
 end
